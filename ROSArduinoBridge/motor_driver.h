@@ -1,14 +1,14 @@
 /***************************************************************
-   Motor driver function definitions - by James Nugen
+   Motor driver function definitions - by James Nugen - modified by Jere Leman
    *************************************************************/
 
-#ifdef L298_MOTOR_DRIVER
-  #define RIGHT_MOTOR_BACKWARD 5
-  #define LEFT_MOTOR_BACKWARD  6
-  #define RIGHT_MOTOR_FORWARD  9
-  #define LEFT_MOTOR_FORWARD   10
-  #define RIGHT_MOTOR_ENABLE 12
-  #define LEFT_MOTOR_ENABLE 13
+#ifdef MD04_MOTOR_DRIVER
+  #define RIGHT_MOTOR_DRIVE 6
+  #define LEFT_MOTOR_DRIVE  5
+
+  
+  #define RIGHT_MOTOR_DIR 10
+  #define LEFT_MOTOR_DIR   9
 #endif
 
 void initMotorController();
