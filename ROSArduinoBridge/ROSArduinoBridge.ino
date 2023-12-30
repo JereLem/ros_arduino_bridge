@@ -63,7 +63,7 @@
    #define ARDUINO_ENC_COUNTER
 
    /* L298 Motor driver*/
-   #define L298_MOTOR_DRIVER
+   #define MD04_MOTOR_DRIVER
 #endif
 
 //#define USE_SERVOS  // Enable use of PWM servos as defined in servos.h
@@ -137,6 +137,8 @@ char argv2[16];
 // The arguments converted to integers
 long arg1;
 long arg2;
+
+
 
 /* Clear the current command parameters */
 void resetCommand() {
@@ -355,4 +357,3 @@ void loop() {
   }
 #endif
 }
-
