@@ -63,7 +63,9 @@
    #define ARDUINO_ENC_COUNTER
 
    /* L298 Motor driver*/
-   #define MD04_MOTOR_DRIVER
+   //#define L298_MOTOR_DRIVER
+
+   #define IBT2
 #endif
 
 //#define USE_SERVOS  // Enable use of PWM servos as defined in servos.h
@@ -86,6 +88,8 @@
 
 /* Sensor functions */
 #include "sensors.h"
+
+#include <PWM.h>
 
 /* Include servo support if required */
 #ifdef USE_SERVOS
@@ -137,8 +141,6 @@ char argv2[16];
 // The arguments converted to integers
 long arg1;
 long arg2;
-
-
 
 /* Clear the current command parameters */
 void resetCommand() {
@@ -250,6 +252,14 @@ int runCommand() {
 /* Setup function--runs once at startup. */
 void setup() {
   Serial.begin(BAUDRATE);
+  int32_t frequency = 20000; //frequency (in Hz)
+  //initialize all timers except for 0, to save time keeping functions
+  InitTimersSafe();
+  SetPinFrequencySafe(3, frequency);
+  SetPinFrequencySafe(11, frequency);
+  SetPinFrequencySafe(9, frequency);
+  SetPinFrequencySafe(10, frequency);
+    
 
 // Initialize the motor controller if used */
 #ifdef USE_BASE
