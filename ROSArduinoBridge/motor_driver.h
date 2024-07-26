@@ -1,14 +1,13 @@
 /***************************************************************
-   Motor driver function definitions - by James Nugen - modified by Jere Leman
+   Motor driver function definitions - by Jere Leman
    *************************************************************/
 
-#ifdef MD04_MOTOR_DRIVER
-  #define RIGHT_MOTOR_DRIVE 6
-  #define LEFT_MOTOR_DRIVE  5
-
+#ifdef IBT2
+  #define RPWM_RIGHT 11
+  #define LPWM_RIGHT 10
   
-  #define RIGHT_MOTOR_DIR 10
-  #define LEFT_MOTOR_DIR   9
+  #define RPWM_LEFT 3
+  #define LPWM_LEFT 9
 #endif
 
 void initMotorController();
