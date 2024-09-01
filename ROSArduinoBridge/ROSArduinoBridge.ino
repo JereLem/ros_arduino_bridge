@@ -50,22 +50,13 @@
 
 /* Define the motor controller and encoder library you are using */
 #ifdef USE_BASE
-   /* The Pololu VNH5019 dual motor driver shield */
-   //#define POLOLU_VNH5019
-
-   /* The Pololu MC33926 dual motor driver shield */
-   //#define POLOLU_MC33926
-
-   /* The RoboGaia encoder shield */
-   //#define ROBOGAIA
    
    /* Encoders directly attached to Arduino board */
    #define ARDUINO_ENC_COUNTER
 
-   /* L298 Motor driver*/
-   //#define L298_MOTOR_DRIVER
-
-   #define IBT2
+   /* A100_MOTOR_DRIVER */
+   #define A100_MOTOR_DRIVER
+   
 #endif
 
 //#define USE_SERVOS  // Enable use of PWM servos as defined in servos.h
@@ -74,8 +65,8 @@
 /* Serial port baud rate */
 #define BAUDRATE     57600
 
-/* Maximum PWM signal */
-#define MAX_PWM        255
+/* Maximum PWM signal  (98% just to be safe)*/
+#define MAX_PWM      250
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
@@ -89,7 +80,8 @@
 /* Sensor functions */
 #include "sensors.h"
 
-#include <PWM.h>
+// UNCOMMENT IF HIGHER FREQ NEEDED!!!!
+//#include <PWM.h>
 
 /* Include servo support if required */
 #ifdef USE_SERVOS
@@ -118,11 +110,19 @@
 
   /* Stop the robot if it hasn't received a movement command
    in this number of milliseconds */
-  #define AUTO_STOP_INTERVAL 2000
+  #define AUTO_STOP_INTERVAL 20000
   long lastMotorCommand = AUTO_STOP_INTERVAL;
 #endif
 
 /* Variable initialization */
+
+int currentLeftSpeed = 0;
+int currentRightSpeed = 0;
+int targetLeftSpeed = 0;
+int targetRightSpeed = 0;
+unsigned long rampStartTime = 0;
+bool isRamping = false;
+int rampDuration = 5000; // Ramp duration in milliseconds
 
 // A pair of varibles to help parse serial commands (thanks Fergs)
 int arg = 0;
@@ -252,14 +252,12 @@ int runCommand() {
 /* Setup function--runs once at startup. */
 void setup() {
   Serial.begin(BAUDRATE);
-  int32_t frequency = 20000; //frequency (in Hz)
+  // UNCOMMENT IF HIGHER FREQ NEEDED!!!!
+  //int32_t frequency = 15000; //frequency (in Hz)
   //initialize all timers except for 0, to save time keeping functions
-  InitTimersSafe();
-  SetPinFrequencySafe(3, frequency);
-  SetPinFrequencySafe(11, frequency);
-  SetPinFrequencySafe(9, frequency);
-  SetPinFrequencySafe(10, frequency);
-    
+  //InitTimersSafe();
+  //SetPinFrequencySafe(3, frequency);
+  //SetPinFrequencySafe(11, frequency);
 
 // Initialize the motor controller if used */
 #ifdef USE_BASE
@@ -344,16 +342,41 @@ void loop() {
       }
     }
   }
-  
+  //monitorMotorParameters();
 // If we are using base control, run a PID calculation at the appropriate intervals
 #ifdef USE_BASE
+  // Handle ramping of motor speeds
+  if (isRamping) {
+    unsigned long currentTime = millis();
+    unsigned long elapsedTime = currentTime - rampStartTime;
+    
+    // Calculate the progress as a percentage (0.0 to 1.0)
+    float progress = constrain((float)elapsedTime / rampDuration, 0.0, 1.0);
+    
+    // Update current speeds based on progress
+    currentLeftSpeed = (int)((targetLeftSpeed - currentLeftSpeed) * 0.1 + currentLeftSpeed);
+    currentRightSpeed = (int)((targetRightSpeed - currentRightSpeed) * 0.1 + currentRightSpeed);
+    
+    // Set motor speeds
+    setMotorSpeed(LEFT, currentLeftSpeed);
+    setMotorSpeed(RIGHT, currentRightSpeed);
+    
+    // Check if ramping is complete
+    if (progress >= 1.0) {
+      isRamping = false;
+    }
+  }
+
+  // Monitor motor parameters (optional)
+  monitorMotorParameters();
+  
   if (millis() > nextPID) {
     updatePID();
     nextPID += PID_INTERVAL;
   }
   
   // Check to see if we have exceeded the auto-stop interval
-  if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {;
+  if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {; 
     setMotorSpeeds(0, 0);
     moving = 0;
   }
