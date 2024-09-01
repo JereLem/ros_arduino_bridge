@@ -1,117 +1,128 @@
 /***************************************************************
-   Motor driver definitions
-   
-   Add a "#elif defined" block to this file to include support
-   for a particular motor driver.  Then add the appropriate
-   #define near the top of the main ROSArduinoBridge.ino file.
-   
-   *************************************************************/
+   Motor driver code
+***************************************************************/
 
 #ifdef USE_BASE
-   
-#ifdef POLOLU_VNH5019
-  /* Include the Pololu library */
-  #include "DualVNH5019MotorShield.h"
 
-  /* Create the motor driver object */
-  DualVNH5019MotorShield drive;
-  
-  /* Wrap the motor driver initialization */
-  void initMotorController() {
-    drive.init();
+#ifdef A100_MOTOR_DRIVER
+
+// Floats for ADC voltage & Input voltage
+float adc_voltage = 0.0;
+float voltage = 0.0;
+ 
+// Floats for resistor values in divider (in ohms)
+float R1 = 10000.0;
+float R2 = 10000.0; 
+ 
+// Float for Reference Voltage
+float ref_voltage = 5.0;
+ 
+// Integer for ADC value
+int adc_value = 0;
+
+void initMotorController() {
+  // Initialize the motor pins as outputs
+  pinMode(RIGHT_MOTOR_BACKWARD, OUTPUT);
+  pinMode(RIGHT_MOTOR_FORWARD, OUTPUT);
+  pinMode(RIGHT_PWM, OUTPUT);
+
+  pinMode(LEFT_MOTOR_FORWARD, OUTPUT);
+  pinMode(LEFT_MOTOR_BACKWARD, OUTPUT);
+  pinMode(LEFT_PWM, OUTPUT);
+
+  // Optionally, you can set the motors to be initially stopped
+  analogWrite(RIGHT_PWM, 0);
+  analogWrite(LEFT_PWM, 0);
+  digitalWrite(RIGHT_MOTOR_FORWARD, LOW);
+  digitalWrite(RIGHT_MOTOR_BACKWARD, LOW);
+  digitalWrite(LEFT_MOTOR_FORWARD, LOW);
+  digitalWrite(LEFT_MOTOR_BACKWARD, LOW);
+}
+
+void setMotorSpeed(int i, int spd) {
+  unsigned char reverse = 0;
+
+  // Check if the speed is negative, which means reverse direction
+  if (spd < 0) {
+    spd = -spd;
+    reverse = 1;
+  }
+  if (spd > 255) { // Limit speed to 255
+    spd = 255;
   }
 
-  /* Wrap the drive motor set speed function */
-  void setMotorSpeed(int i, int spd) {
-    if (i == LEFT) drive.setM1Speed(spd);
-    else drive.setM2Speed(spd);
-  }
-
-  // A convenience function for setting both motor speeds
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
-  }
-#elif defined POLOLU_MC33926
-  /* Include the Pololu library */
-  #include "DualMC33926MotorShield.h"
-
-  /* Create the motor driver object */
-  DualMC33926MotorShield drive;
-  
-  /* Wrap the motor driver initialization */
-  void initMotorController() {
-    drive.init();
-  }
-
-  /* Wrap the drive motor set speed function */
-  void setMotorSpeed(int i, int spd) {
-    if (i == LEFT) drive.setM1Speed(spd);
-    else drive.setM2Speed(spd);
-  }
-
-  // A convenience function for setting both motor speeds
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
-  }
-#elif defined L298_MOTOR_DRIVER
-  void initMotorController() {
-    digitalWrite(RIGHT_MOTOR_ENABLE, HIGH);
-    digitalWrite(LEFT_MOTOR_ENABLE, HIGH);
-  }
-  
-  void setMotorSpeed(int i, int spd) {
-    unsigned char reverse = 0;
-  
-    if (spd < 0)
-    {
-      spd = -spd;
-      reverse = 1;
+  // Set motor speed and direction based on the motor index (i)
+  if (i == LEFT) {
+    if (reverse == 0) {
+      digitalWrite(LEFT_MOTOR_FORWARD, HIGH);
+      digitalWrite(LEFT_MOTOR_BACKWARD, LOW);
+    } else {
+      digitalWrite(LEFT_MOTOR_FORWARD, LOW);
+      digitalWrite(LEFT_MOTOR_BACKWARD, HIGH);
     }
-    if (spd > 255)
-      spd = 255;
-    
-    if (i == LEFT) { 
-      if      (reverse == 0) { analogWrite(LEFT_MOTOR_FORWARD, spd); analogWrite(LEFT_MOTOR_BACKWARD, 0); }
-      else if (reverse == 1) { analogWrite(LEFT_MOTOR_BACKWARD, spd); analogWrite(LEFT_MOTOR_FORWARD, 0); }
+    // IF higher freq pwmWrite() is needed
+    analogWrite(LEFT_PWM, spd);
+  }
+  else if (i == RIGHT) {
+    if (reverse == 0) {
+      digitalWrite(RIGHT_MOTOR_FORWARD, HIGH);
+      digitalWrite(RIGHT_MOTOR_BACKWARD, LOW);
+    } else {
+      digitalWrite(RIGHT_MOTOR_FORWARD, LOW);
+      digitalWrite(RIGHT_MOTOR_BACKWARD, HIGH);
     }
-    else /*if (i == RIGHT) //no need for condition*/ {
-      if      (reverse == 0) { analogWrite(RIGHT_MOTOR_FORWARD, spd); analogWrite(RIGHT_MOTOR_BACKWARD, 0); }
-      else if (reverse == 1) { analogWrite(RIGHT_MOTOR_BACKWARD, spd); analogWrite(RIGHT_MOTOR_FORWARD, 0); }
-    }
+    // IF higher freq pwmWrite() is needed
+    analogWrite(RIGHT_PWM, spd);
   }
+}
+
+void setMotorSpeeds(int leftSpeed, int rightSpeed) {
+  targetLeftSpeed = constrain(leftSpeed, -255, 255);
+  targetRightSpeed = constrain(rightSpeed, -255, 255);
+  rampStartTime = millis();
+  isRamping = true;
+}
+
+
+float readVoltage() {
+  // Read the Analog Input
+  adc_value = analogRead(VOLTAGE_PIN);
   
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
-  }
-
-#elif defined IBT2
-  /* Include the IBT2 library */
-  #include <DualIBT2MotorShield.h>
-
-  /* Create the motor driver object */
-  DualIBT2MotorShield drive;
+  // Determine voltage at ADC input
+  adc_voltage  = (adc_value * ref_voltage) / 1024.0;
   
-  /* Wrap the motor driver initialization */
-  void initMotorController() {
-    drive.init();
-  }
+  // Calculate voltage at divider input
+  voltage = adc_voltage*(R1+R2)/R2;
 
-  /* Wrap the drive motor set speed function */
-  void setMotorSpeed(int i, int spd) {
-    if (i == LEFT) drive.setM1Speed(spd);
-    else drive.setM2Speed(spd);
-  }
+  return voltage;
+}
 
-  // A convenience function for setting both motor speeds
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
+float readCurrent() {
+  const int numReadings = 10;
+  long sum = 0;
+  for (int i = 0; i < numReadings; i++) {
+    sum += analogRead(CURRENT_PIN);
+    delay(100); // Short delay between readings
   }
+  float average = sum / numReadings;
+  return ((average * 5.0) / 1023.0);
+}
+
+void monitorMotorParameters() {
+  float current = readCurrent();
+  float voltage = readVoltage();
+
+  Serial.print("Current: ");
+  Serial.print(current, 2);
+  Serial.print(" A, Voltage: ");
+  Serial.print(voltage, 2);
+  Serial.println(" V");
+  delay(500);
+}
+
+#endif // End of 100A_MOTOR_DRIVER check
+
 #else
-  #error A motor driver must be selected!
-#endif
+#error A motor driver must be selected!
 
-#endif
+#endif // End of USE_BASE check
