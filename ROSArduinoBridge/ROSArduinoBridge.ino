@@ -80,8 +80,8 @@
 /* Sensor functions */
 #include "sensors.h"
 
-// UNCOMMENT IF HIGHER FREQ NEEDED!!!!
-//#include <PWM.h>
+// COMMENT IF YOU WANT DEFAULT PWM FROM ARDUINO!!!!
+#include <PWM.h>
 
 /* Include servo support if required */
 #ifdef USE_SERVOS
@@ -115,14 +115,6 @@
 #endif
 
 /* Variable initialization */
-
-int currentLeftSpeed = 0;
-int currentRightSpeed = 0;
-int targetLeftSpeed = 0;
-int targetRightSpeed = 0;
-unsigned long rampStartTime = 0;
-bool isRamping = false;
-int rampDuration = 5000; // Ramp duration in milliseconds
 
 // A pair of varibles to help parse serial commands (thanks Fergs)
 int arg = 0;
@@ -253,11 +245,13 @@ int runCommand() {
 void setup() {
   Serial.begin(BAUDRATE);
   // UNCOMMENT IF HIGHER FREQ NEEDED!!!!
-  //int32_t frequency = 15000; //frequency (in Hz)
+  int32_t frequency = 30000; //frequency (in Hz)
   //initialize all timers except for 0, to save time keeping functions
-  //InitTimersSafe();
-  //SetPinFrequencySafe(3, frequency);
-  //SetPinFrequencySafe(11, frequency);
+  InitTimersSafe();
+  SetPinFrequencySafe(9, frequency);
+  SetPinFrequencySafe(10, frequency);
+
+
 
 // Initialize the motor controller if used */
 #ifdef USE_BASE
@@ -342,34 +336,8 @@ void loop() {
       }
     }
   }
-  //monitorMotorParameters();
 // If we are using base control, run a PID calculation at the appropriate intervals
 #ifdef USE_BASE
-  // Handle ramping of motor speeds
-  if (isRamping) {
-    unsigned long currentTime = millis();
-    unsigned long elapsedTime = currentTime - rampStartTime;
-    
-    // Calculate the progress as a percentage (0.0 to 1.0)
-    float progress = constrain((float)elapsedTime / rampDuration, 0.0, 1.0);
-    
-    // Update current speeds based on progress
-    currentLeftSpeed = (int)((targetLeftSpeed - currentLeftSpeed) * 0.1 + currentLeftSpeed);
-    currentRightSpeed = (int)((targetRightSpeed - currentRightSpeed) * 0.1 + currentRightSpeed);
-    
-    // Set motor speeds
-    setMotorSpeed(LEFT, currentLeftSpeed);
-    setMotorSpeed(RIGHT, currentRightSpeed);
-    
-    // Check if ramping is complete
-    if (progress >= 1.0) {
-      isRamping = false;
-    }
-  }
-
-  // Monitor motor parameters (optional)
-  monitorMotorParameters();
-  
   if (millis() > nextPID) {
     updatePID();
     nextPID += PID_INTERVAL;
