@@ -1,5 +1,5 @@
 /***************************************************************
-   Motor driver code
+   Motor driver - modified by Jere Leman
 ***************************************************************/
 
 #ifdef USE_BASE
@@ -9,10 +9,6 @@
 // Floats for ADC voltage & Input voltage
 float adc_voltage = 0.0;
 float voltage = 0.0;
- 
-// Floats for resistor values in divider (in ohms)
-float R1 = 10000.0;
-float R2 = 10000.0; 
  
 // Float for Reference Voltage
 float ref_voltage = 5.0;
@@ -30,15 +26,17 @@ void initMotorController() {
   pinMode(LEFT_MOTOR_BACKWARD, OUTPUT);
   pinMode(LEFT_PWM, OUTPUT);
 
-  // Optionally, you can set the motors to be initially stopped
-  analogWrite(RIGHT_PWM, 0);
-  analogWrite(LEFT_PWM, 0);
+  // IF basic arduino PWM needed use analogwrite()
+  pwmWrite(RIGHT_PWM, 0);
+  pwmWrite(LEFT_PWM, 0);
   digitalWrite(RIGHT_MOTOR_FORWARD, LOW);
   digitalWrite(RIGHT_MOTOR_BACKWARD, LOW);
   digitalWrite(LEFT_MOTOR_FORWARD, LOW);
   digitalWrite(LEFT_MOTOR_BACKWARD, LOW);
 }
 
+
+// Sets the speed of one motor
 void setMotorSpeed(int i, int spd) {
   unsigned char reverse = 0;
 
@@ -61,7 +59,8 @@ void setMotorSpeed(int i, int spd) {
       digitalWrite(LEFT_MOTOR_BACKWARD, HIGH);
     }
     // IF higher freq pwmWrite() is needed
-    analogWrite(LEFT_PWM, spd);
+    // IF basic arduino PWM needed use analogwrite()
+    pwmWrite(LEFT_PWM, spd);
   }
   else if (i == RIGHT) {
     if (reverse == 0) {
@@ -72,27 +71,29 @@ void setMotorSpeed(int i, int spd) {
       digitalWrite(RIGHT_MOTOR_BACKWARD, HIGH);
     }
     // IF higher freq pwmWrite() is needed
-    analogWrite(RIGHT_PWM, spd);
+    // IF basic arduino PWM needed use analogwrite()
+    pwmWrite(RIGHT_PWM, spd);
   }
 }
 
+
+// Sets motor speeds for both motors
 void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-  targetLeftSpeed = constrain(leftSpeed, -255, 255);
-  targetRightSpeed = constrain(rightSpeed, -255, 255);
-  rampStartTime = millis();
-  isRamping = true;
+    setMotorSpeed(LEFT, leftSpeed);
+    setMotorSpeed(RIGHT, rightSpeed);
 }
 
 
+// Tried reading voltage/current from motor driver, but the values dont seem to be correct
 float readVoltage() {
   // Read the Analog Input
   adc_value = analogRead(VOLTAGE_PIN);
   
   // Determine voltage at ADC input
-  adc_voltage  = (adc_value * ref_voltage) / 1024.0;
+  adc_voltage  = (adc_value * ref_voltage) / 1023.0;
   
   // Calculate voltage at divider input
-  voltage = adc_voltage*(R1+R2)/R2;
+  voltage = adc_voltage;
 
   return voltage;
 }
