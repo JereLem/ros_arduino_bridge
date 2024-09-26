@@ -110,7 +110,7 @@
 
   /* Stop the robot if it hasn't received a movement command
    in this number of milliseconds */
-  #define AUTO_STOP_INTERVAL 20000
+  #define AUTO_STOP_INTERVAL 5000
   long lastMotorCommand = AUTO_STOP_INTERVAL;
 #endif
 
@@ -245,7 +245,7 @@ int runCommand() {
 void setup() {
   Serial.begin(BAUDRATE);
   // UNCOMMENT IF HIGHER FREQ NEEDED!!!!
-  int32_t frequency = 30000; //frequency (in Hz)
+  int32_t frequency = 20000; //frequency (in Hz)
   //initialize all timers except for 0, to save time keeping functions
   InitTimersSafe();
   SetPinFrequencySafe(9, frequency);
@@ -336,6 +336,9 @@ void loop() {
       }
     }
   }
+  // Monitor voltage, amperage and temps
+  monitorMotorParameters();
+  
 // If we are using base control, run a PID calculation at the appropriate intervals
 #ifdef USE_BASE
   if (millis() > nextPID) {

@@ -3,6 +3,7 @@
 ***************************************************************/
 
 #ifdef A100_MOTOR_DRIVER
+
   // 1 - Motor
   #define RIGHT_MOTOR_BACKWARD 5
   #define RIGHT_MOTOR_FORWARD  6
@@ -14,8 +15,9 @@
   #define LEFT_PWM 10
 
   // Current & Voltage Output
-  #define CURRENT_PIN A0
   #define VOLTAGE_PIN A1
+  #define CURRENT_PIN A2
+  #define TEMP_PIN A3
 #endif
 
 // Function declarations
@@ -24,4 +26,5 @@ void setMotorSpeed(int i, int spd);
 void setMotorSpeeds(int leftSpeed, int rightSpeed);
 float readCurrent();
 float readVoltage();
+float readTemp();
 void monitorMotorParameters();

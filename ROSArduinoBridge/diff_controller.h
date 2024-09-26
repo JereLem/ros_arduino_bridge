@@ -33,10 +33,10 @@ SetPointInfo;
 SetPointInfo leftPID, rightPID;
 
 /* PID Parameters */
-int Kp = 20;
-int Kd = 12;
-int Ki = 0;
-int Ko = 50;
+int Kp = 200;
+int Kd = 3.5;
+int Ki = 3.0;
+int Ko = 0;
 
 unsigned char moving = 0; // is the base in motion?
 
@@ -127,4 +127,3 @@ void updatePID() {
   /* Set the motor speeds accordingly */
   setMotorSpeeds(leftPID.output, rightPID.output);
 }
-

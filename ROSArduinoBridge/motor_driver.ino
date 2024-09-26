@@ -11,7 +11,7 @@ float adc_voltage = 0.0;
 float voltage = 0.0;
  
 // Float for Reference Voltage
-float ref_voltage = 5.0;
+float ref_voltage = 24.0;
  
 // Integer for ADC value
 int adc_value = 0;
@@ -84,41 +84,73 @@ void setMotorSpeeds(int leftSpeed, int rightSpeed) {
 }
 
 
-// Tried reading voltage/current from motor driver, but the values dont seem to be correct
+// Read analog voltage from motor driver
 float readVoltage() {
-  // Read the Analog Input
-  adc_value = analogRead(VOLTAGE_PIN);
+  int adc_value = analogRead(VOLTAGE_PIN);  // Read the Analog Input
+  float divider_factor = 1.8;               // Scaling factor for voltage divider
   
   // Determine voltage at ADC input
-  adc_voltage  = (adc_value * ref_voltage) / 1023.0;
+  float adc_voltage = (adc_value * ref_voltage) / 1023.0;
   
-  // Calculate voltage at divider input
-  voltage = adc_voltage;
-
+  // Calculate the actual voltage at the motor using the scaling factor
+  float voltage = adc_voltage * divider_factor;
+  
   return voltage;
 }
 
-float readCurrent() {
-  const int numReadings = 10;
-  long sum = 0;
-  for (int i = 0; i < numReadings; i++) {
-    sum += analogRead(CURRENT_PIN);
-    delay(100); // Short delay between readings
+
+// Read analog temp from motor driver thermistor
+float readTemp() {
+  const int ThermistorPin = TEMP_PIN; // Define TEMP_PIN globally
+  int Vo = analogRead(ThermistorPin);
+
+  if (Vo == 0) {
+    Serial.println("Invalid temperature reading");
+    return -1; // Return an error value for invalid reading
   }
-  float average = sum / numReadings;
-  return ((average * 5.0) / 1023.0);
+
+  float R1 = 10000; // Resistor value
+  float logR2, R2, T, Tc;
+  float c1 = 1.009249522e-03, c2 = 2.378405444e-04, c3 = 2.019202697e-07;
+
+  R2 = R1 * (1023.0 / (float)Vo - 1.0);
+  logR2 = log(R2);
+  T = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2));
+  Tc = T - 273.15;  // Convert from Kelvin to Celsius
+
+  return Tc;
 }
+
+
+// Read analog current from motor driver
+float readCurrent() {
+  int adc_value = analogRead(CURRENT_PIN);
+  float sensor_scaling = 13;               
+  
+  // Calculate the voltage at the CS pin
+  float cs_voltage = (adc_value * ref_voltage) / 1023.0;
+  
+  // Convert the CS voltage to current (A)
+  float current = cs_voltage / sensor_scaling;
+
+  return current;
+}
+
 
 void monitorMotorParameters() {
   float current = readCurrent();
   float voltage = readVoltage();
+  float temperature = readTemp();
 
   Serial.print("Current: ");
   Serial.print(current, 2);
   Serial.print(" A, Voltage: ");
   Serial.print(voltage, 2);
-  Serial.println(" V");
-  delay(500);
+  Serial.print(" V, Temperature: ");
+  Serial.print(temperature, 2);
+  Serial.println(" C");
+  
+  delay(1000); // Update rate 0.1s
 }
 
 #endif // End of 100A_MOTOR_DRIVER check
